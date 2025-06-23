@@ -1,0 +1,1601 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Guide to Graph Algorithms</title>
+    <!-- Chosen Palette: "Soothing Sage" - A calm, modern palette with a light neutral background, sage green for primary elements, warm gray for text, and a soft amber for accents. -->
+    <!-- Application Structure Plan: The application is designed as a single-page dashboard with a two-level navigation system. A main sidebar allows users to select a high-level category (e.g., Traversal, Shortest Path). The main content area then displays sub-tabs for specific algorithms within that category (e.g., BFS, DFS). This structure avoids overwhelming the user with a long, linear document, enabling direct access to specific topics. Key information like complexities is presented in "at-a-glance" cards. Interactive canvas visualizations are included for core algorithms to provide a hands-on learning experience, directly linking theory to practice. This non-linear, topic-oriented design prioritizes user-driven exploration and comprehension over passively reading a report. -->
+    <!-- Visualization & Content Choices: 
+        - Goal: Organize & Explore -> Presentation: Main sidebar navigation and content-area sub-tabs. Interaction: Clicking a category loads relevant algorithms into the main view. Justification: Provides clear, hierarchical navigation for a content-rich topic. Library/Method: HTML/CSS/JS.
+        - Goal: Inform (Quick Facts) -> Presentation: "Key Properties" cards for each algorithm. Interaction: Static display. Justification: Summarizes vital information (complexities, use cases) for quick reference and comparison. Library/Method: HTML/Tailwind CSS.
+        - Goal: Compare (Representations) -> Presentation: An HTML table comparing Adjacency Matrix vs. List. Interaction: Static display. Justification: The most effective way to present direct feature-by-feature comparisons. Library/Method: HTML/Tailwind CSS.
+        - Goal: Illustrate & Engage -> Presentation: Interactive Canvas visualizations for BFS, DFS, and Dijkstra's. Interaction: "Next Step" and "Reset" buttons to control the algorithm's execution on a sample graph. Nodes and edges change color to reflect their state. Justification: Actively engages the user and makes abstract algorithms tangible. Library/Method: Vanilla JS on HTML Canvas.
+        - Goal: Compare (Complexities) -> Presentation: A Chart.js bar chart comparing the time complexities of shortest path algorithms. Interaction: Hover tooltips. Justification: Provides an immediate visual sense of the performance trade-offs between algorithms. Library/Method: Chart.js.
+        - Goal: Present Code -> Presentation: Switchable code blocks for Python and C++. Interaction: Toggle buttons to switch between languages. Justification: Caters to a wider audience with different programming language preferences. Library/Method: HTML/JS.
+        - CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --bg-main: #f8f9fa; /* Light Neutral */
+            --bg-sidebar: #e9ecef; /* Slightly darker neutral */
+            --bg-card: #ffffff;
+            --text-primary: #343a40; /* Warm Gray */
+            --text-secondary: #495057;
+            --accent-primary: #52796f; /* Sage Green */
+            --accent-primary-hover: #354f52;
+            --accent-secondary: #d4a373; /* Soft Amber */
+            --border-color: #dee2e6;
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-main);
+            color: var(--text-primary);
+        }
+        .sidebar-btn {
+            background-color: transparent;
+            color: var(--text-secondary);
+            transition: all 0.2s ease-in-out;
+        }
+        .sidebar-btn.active, .sidebar-btn:hover {
+            background-color: var(--accent-primary);
+            color: white;
+        }
+        .content-tab {
+            color: var(--text-secondary);
+            border-bottom: 2px solid transparent;
+            transition: all 0.2s ease-in-out;
+        }
+        .content-tab.active, .content-tab:hover {
+            color: var(--accent-primary);
+            border-bottom-color: var(--accent-primary);
+        }
+        .lang-toggle {
+            background-color: #f1f3f4;
+            color: var(--text-secondary);
+            transition: background-color 0.2s ease;
+        }
+        .lang-toggle.active {
+            background-color: var(--accent-primary);
+            color: white;
+        }
+        .content-section, .code-block {
+            display: none;
+        }
+        .content-section.active, .code-block.active {
+            display: block;
+        }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 300px; 
+            max-height: 400px;
+        }
+        @media (min-width: 768px) {
+            .chart-container {
+                height: 350px;
+            }
+        }
+        @import url('https://rsms.me/inter/inter.css');
+        html { font-family: 'Inter', sans-serif; }
+    </style>
+</head>
+<body class="antialiased">
+    <div class="flex flex-col md:flex-row min-h-screen">
+        <!-- Sidebar Navigation -->
+        <aside class="w-full md:w-64 bg-sidebar p-4 md:p-6 space-y-4 shrink-0">
+            <h1 class="text-2xl font-bold" style="color: var(--accent-primary);">Graph Algorithms</h1>
+            <nav class="space-y-2">
+                <button data-category="concepts" class="sidebar-btn w-full text-left p-3 rounded-lg font-semibold flex items-center gap-3 active">
+                    <span class="text-xl">📚</span> Core Concepts
+                </button>
+                <button data-category="traversal" class="sidebar-btn w-full text-left p-3 rounded-lg font-semibold flex items-center gap-3">
+                    <span class="text-xl">🔍</span> Traversal
+                </button>
+                <button data-category="shortest-path" class="sidebar-btn w-full text-left p-3 rounded-lg font-semibold flex items-center gap-3">
+                    <span class="text-xl">📍</span> Shortest Path
+                </button>
+                <button data-category="mst" class="sidebar-btn w-full text-left p-3 rounded-lg font-semibold flex items-center gap-3">
+                    <span class="text-xl">🌳</span> Minimum Spanning Tree
+                </button>
+                <button data-category="specialized" class="sidebar-btn w-full text-left p-3 rounded-lg font-semibold flex items-center gap-3">
+                    <span class="text-xl">⚙️</span> Specialized Topics
+                </button>
+                 <button data-category="problem-solving" class="sidebar-btn w-full text-left p-3 rounded-lg font-semibold flex items-center gap-3">
+                    <span class="text-xl">💡</span> Problem Solving
+                </button>
+            </nav>
+        </aside>
+
+        <!-- Main Content -->
+        <main id="main-content" class="flex-1 p-4 md:p-8 overflow-y-auto">
+            <!-- Content will be dynamically inserted here -->
+        </main>
+    </div>
+
+    <script>
+        const contentData = {
+            'concepts': {
+                title: 'Core Concepts',
+                default: 'representations',
+                tabs: {
+                    'representations': 'Representations',
+                    'terminology': 'Terminology',
+                    'types': 'Graph Types',
+                },
+                content: {
+                    'terminology': `
+                        <h3 class="text-2xl font-bold mb-4">Basic Graph Terminology</h3>
+                        <div class="prose max-w-none text-text-secondary">
+                          <p>Understanding the foundational terminology is crucial for navigating graph theory. A graph is a data structure consisting of a set of vertices (or nodes) and a set of edges that connect pairs of these vertices.</p>
+                          <ul class="list-disc pl-5 space-y-2">
+                            <li><strong>Vertex (Node):</strong> A fundamental part of a graph, representing an entity or a point.</li>
+                            <li><strong>Edge (Link):</strong> A connection between two vertices, signifying a relationship. Edges can be directed or undirected, and weighted or unweighted.</li>
+                            <li><strong>Degree of a Vertex:</strong> In an undirected graph, it's the number of edges connected to a vertex. For directed graphs, we have <em>indegree</em> (incoming edges) and <em>outdegree</em> (outgoing edges).</li>
+                            <li><strong>Path:</strong> A sequence of vertices where each adjacent pair is connected by an edge.</li>
+                            <li><strong>Cycle:</strong> A path that starts and ends at the same vertex.</li>
+                          </ul>
+                        </div>`,
+                    'types': `
+                        <h3 class="text-2xl font-bold mb-4">Common Graph Types</h3>
+                        <div class="prose max-w-none text-text-secondary">
+                          <p>Graphs are categorized based on their properties, which determines which algorithms are applicable.</p>
+                          <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                            <div class="p-4 bg-gray-50 rounded-lg border border-border-color">
+                                <h4 class="font-bold text-lg">Directed vs. Undirected</h4>
+                                <p><strong>Undirected graphs</strong> have edges with no orientation (e.g., Facebook friendship). <strong>Directed graphs (Digraphs)</strong> have edges with a direction (e.g., Twitter followers).</p>
+                            </div>
+                            <div class="p-4 bg-gray-50 rounded-lg border border-border-color">
+                                <h4 class="font-bold text-lg">Weighted vs. Unweighted</h4>
+                                <p><strong>Weighted graphs</strong> assign a value (cost, distance) to each edge. <strong>Unweighted graphs</strong> do not; edges simply represent a connection.</p>
+                            </div>
+                            <div class="p-4 bg-gray-50 rounded-lg border border-border-color">
+                                <h4 class="font-bold text-lg">Cyclic vs. Acyclic</h4>
+                                <p><strong>Cyclic graphs</strong> contain at least one cycle. <strong>Acyclic graphs</strong> do not. A <strong>Directed Acyclic Graph (DAG)</strong> is a common and important type used in scheduling and dependency management.</p>
+                            </div>
+                            <div class="p-4 bg-gray-50 rounded-lg border border-border-color">
+                                <h4 class="font-bold text-lg">Sparse vs. Dense</h4>
+                                <p><strong>Sparse graphs</strong> have few edges relative to the number of vertices ($E \\ll V^2$). <strong>Dense graphs</strong> have many edges, approaching the maximum possible ($E \\approx V^2$).</p>
+                            </div>
+                          </div>
+                        </div>`,
+                    'representations': `
+                        <h3 class="text-2xl font-bold mb-4">Graph Representations</h3>
+                        <div class="prose max-w-none text-text-secondary mb-6">
+                            <p>The choice of how to store a graph in memory is critical, as it significantly impacts the performance of algorithms. The two most common methods are the Adjacency Matrix and the Adjacency List, each with distinct trade-offs.</p>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left border-collapse">
+                                <thead class="border-b-2 border-border-color">
+                                    <tr>
+                                        <th class="p-3 font-semibold">Feature</th>
+                                        <th class="p-3 font-semibold">Adjacency Matrix (V x V array)</th>
+                                        <th class="p-3 font-semibold">Adjacency List (Array of lists)</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="text-text-secondary">
+                                    <tr class="border-b border-border-color">
+                                        <td class="p-3 font-medium">Space Complexity</td>
+                                        <td class="p-3">$\\mathcal{O}(V^2)$</td>
+                                        <td class="p-3">$\\mathcal{O}(V + E)$</td>
+                                    </tr>
+                                    <tr class="border-b border-border-color">
+                                        <td class="p-3 font-medium">Check Edge (u, v)</td>
+                                        <td class="p-3">$\\mathcal{O}(1)$</td>
+                                        <td class="p-3">$\\mathcal{O}(\\text{deg}(u))$</td>
+                                    </tr>
+                                    <tr class="border-b border-border-color">
+                                        <td class="p-3 font-medium">Iterate Neighbors of u</td>
+                                        <td class="p-3">$\\mathcal{O}(V)$</td>
+                                        <td class="p-3">$\\mathcal{O}(\\text{deg}(u))$</td>
+                                    </tr>
+                                    <tr class="border-b border-border-color">
+                                        <td class="p-3 font-medium">Add Edge</td>
+                                        <td class="p-3">$\\mathcal{O}(1)$</td>
+                                        <td class="p-3">$\\mathcal{O}(1)$</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="p-3 font-medium">Best For</td>
+                                        <td class="p-3">Dense graphs where edge lookups are frequent.</td>
+                                        <td class="p-3">Sparse graphs and algorithms that traverse edges.</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        `
+                }
+            },
+            'traversal': {
+                title: 'Graph Traversal Algorithms',
+                default: 'bfs',
+                tabs: {
+                    'bfs': 'Breadth-First Search (BFS)',
+                    'dfs': 'Depth-First Search (DFS)',
+                },
+                content: {
+                    'bfs': `
+                        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                            <div class="lg:col-span-1 space-y-4">
+                               <div class="bg-bg-card p-4 rounded-lg shadow">
+                                <h4 class="font-bold text-lg mb-2">Key Properties</h4>
+                                <ul class="list-none space-y-2 text-sm text-text-secondary">
+                                  <li><strong>When to Use:</strong> Finding shortest path in <strong>unweighted</strong> graphs, web crawlers, finding connected components.</li>
+                                  <li><strong>Time Complexity:</strong> $$\\mathcal{O}(V + E)$$</li>
+                                  <li><strong>Space Complexity:</strong> $$\\mathcal{O}(V)$$</li>
+                                </ul>
+                                <button id="bfs-explain-btn" class="mt-4 px-4 py-2 text-sm font-semibold rounded-lg text-white" style="background-color: var(--accent-primary);">Explain in Simple Terms ✨</button>
+                                <div id="bfs-explanation" class="mt-2 text-sm text-text-secondary"></div>
+                               </div>
+                               <div class="bg-bg-card p-4 rounded-lg shadow">
+                                <h4 class="font-bold text-lg mb-2">Intuition</h4>
+                                <p class="text-sm text-text-secondary">BFS explores level by level. It starts at a source node and explores all its immediate neighbors first, before moving on to the next level of neighbors. It uses a <strong>Queue (FIFO)</strong> to keep track of nodes to visit, ensuring this layer-by-layer exploration.</p>
+                               </div>
+                            </div>
+                            <div class="lg:col-span-2 bg-bg-card p-4 rounded-lg shadow">
+                               <h4 class="font-bold text-lg mb-2">Interactive Visualization</h4>
+                               <div class="bg-gray-100 p-2 rounded-lg text-center">
+                                 <canvas id="bfs-viz" width="500" height="300"></canvas>
+                                 <div class="mt-2 space-x-2">
+                                     <button id="bfs-next" class="px-4 py-2 text-sm font-semibold rounded-lg" style="background-color: var(--accent-primary); color: white;">Next Step</button>
+                                     <button id="bfs-reset" class="px-4 py-2 text-sm font-semibold rounded-lg" style="background-color: var(--accent-secondary); color: white;">Reset</button>
+                                 </div>
+                                 <p id="bfs-status" class="text-sm mt-2 h-6 text-text-secondary"></p>
+                               </div>
+                            </div>
+                        </div>
+                        <div class="mt-6 bg-bg-card p-4 rounded-lg shadow">
+                            <h4 class="font-bold text-lg mb-2">Pseudocode & Code</h4>
+                            <div class="flex items-center gap-2 mb-2">
+                                <button data-lang="py" class="lang-toggle active px-3 py-1 text-sm rounded-md">Python</button>
+                                <button data-lang="cpp" class="lang-toggle px-3 py-1 text-sm rounded-md">C++</button>
+                            </div>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <pre class="bg-gray-800 text-white p-4 rounded-lg text-sm overflow-x-auto"><code>BFS(graph, startNode):
+  queue = new Queue()
+  visited = new Set()
+
+  queue.enqueue(startNode)
+  visited.add(startNode)
+
+  while queue is not empty:
+    vertex = queue.dequeue()
+    process(vertex)
+
+    for each neighbor of vertex:
+      if neighbor is not visited:
+        visited.add(neighbor)
+        queue.enqueue(neighbor)</code></pre>
+                                <div class="code-block active" data-lang="py">
+                                    <pre class="bg-gray-800 text-white p-4 rounded-lg text-sm overflow-x-auto h-full"><code>from collections import deque
+
+def bfs(graph, start_node):
+    visited = {start_node}
+    queue = deque([start_node])
+    traversal_order = []
+
+    while queue:
+        vertex = queue.popleft()
+        traversal_order.append(vertex)
+        
+        for neighbor in graph.get(vertex, []):
+            if neighbor not in visited:
+                visited.add(neighbor)
+                queue.append(neighbor)
+    
+    return traversal_order
+
+# Example Usage (Adjacency List Representation)
+example_graph_bfs_py = {
+    'A': ['B', 'C'],
+    'B': ['A', 'D', 'E'],
+    'C': ['A', 'F'],
+    'D': ['B'],
+    'E': ['B', 'F'],
+    'F': ['C', 'E']
+}
+# print("BFS Traversal starting from A:", bfs(example_graph_bfs_py, 'A'))
+# Output: BFS Traversal starting from A: ['A', 'B', 'C', 'D', 'E', 'F']
+</code></pre>
+                                </div>
+                                <div class="code-block" data-lang="cpp">
+                                    <pre class="bg-gray-800 text-white p-4 rounded-lg text-sm overflow-x-auto h-full"><code>#include &lt;iostream&gt;
+#include &lt;vector&gt;
+#include &lt;queue&gt;
+#include &lt;unordered_map&gt;
+#include &lt;unordered_set&gt;
+
+void bfs(std::unordered_map&lt;char, std::vector&lt;char&gt;&gt;& graph, char startNode) {
+    std::queue&lt;char&gt; q;
+    std::unordered_set&lt;char&gt; visited;
+
+    q.push(startNode);
+    visited.insert(startNode);
+
+    std::cout &lt;&lt; "BFS Traversal: ";
+    while (!q.empty()) {
+        char u = q.front();
+        q.pop();
+        std::cout &lt;&lt; u &lt;&lt; " ";
+
+        if (graph.count(u)) { // Check if node exists in graph (has neighbors)
+            for (char v : graph.at(u)) {
+                if (visited.find(v) == visited.end()) {
+                    visited.insert(v);
+                    q.push(v);
+                }
+            }
+        }
+    }
+    std::cout &lt;&lt; std::endl;
+}
+
+/* Example Usage:
+int main() {
+    std::unordered_map&lt;char, std::vector&lt;char&gt;&gt; example_graph_bfs_cpp = {
+        {'A', {'B', 'C'}},
+        {'B', {'A', 'D', 'E'}},
+        {'C', {'A', 'F'}},
+        {'D', {'B'}},
+        {'E', {'B', 'F'}},
+        {'F', {'C', 'E'}}
+    };
+    bfs(example_graph_bfs_cpp, 'A'); // Output: BFS Traversal: A B C D E F
+    return 0;
+}
+*/</code></pre>
+                                </div>
+                            </div>
+                        </div>
+                    `,
+                    'dfs': `
+                        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                            <div class="lg:col-span-1 space-y-4">
+                               <div class="bg-bg-card p-4 rounded-lg shadow">
+                                <h4 class="font-bold text-lg mb-2">Key Properties</h4>
+                                <ul class="list-none space-y-2 text-sm text-text-secondary">
+                                  <li><strong>When to Use:</strong> Cycle detection, topological sorting, finding paths, solving mazes.</li>
+                                  <li><strong>Time Complexity:</strong> $$\\mathcal{O}(V + E)$$</li>
+                                  <li><strong>Space Complexity:</strong> $$\\mathcal{O}(V)$$</li>
+                                </ul>
+                                <button id="dfs-explain-btn" class="mt-4 px-4 py-2 text-sm font-semibold rounded-lg text-white" style="background-color: var(--accent-primary);">Explain in Simple Terms ✨</button>
+                                <div id="dfs-explanation" class="mt-2 text-sm text-text-secondary"></div>
+                               </div>
+                               <div class="bg-bg-card p-4 rounded-lg shadow">
+                                <h4 class="font-bold text-lg mb-2">Intuition</h4>
+                                <p class="text-sm text-text-secondary">DFS explores as far as possible along each branch before backtracking. It follows a path to its end, then backtracks to explore an alternative. It uses a <strong>Stack (LIFO)</strong>, often implicitly via recursion, to manage this deep exploration.</p>
+                               </div>
+                            </div>
+                            <div class="lg:col-span-2 bg-bg-card p-4 rounded-lg shadow">
+                               <h4 class="font-bold text-lg mb-2">Interactive Visualization</h4>
+                               <div class="bg-gray-100 p-2 rounded-lg text-center">
+                                 <canvas id="dfs-viz" width="500" height="300"></canvas>
+                                 <div class="mt-2 space-x-2">
+                                     <button id="dfs-next" class="px-4 py-2 text-sm font-semibold rounded-lg" style="background-color: var(--accent-primary); color: white;">Next Step</button>
+                                     <button id="dfs-reset" class="px-4 py-2 text-sm font-semibold rounded-lg" style="background-color: var(--accent-secondary); color: white;">Reset</button>
+                                 </div>
+                                 <p id="dfs-status" class="text-sm mt-2 h-6 text-text-secondary"></p>
+                               </div>
+                            </div>
+                        </div>
+                        <div class="mt-6 bg-bg-card p-4 rounded-lg shadow">
+                            <h4 class="font-bold text-lg mb-2">Pseudocode & Code (Recursive)</h4>
+                            <div class="flex items-center gap-2 mb-2">
+                                <button data-lang="py" class="lang-toggle active px-3 py-1 text-sm rounded-md">Python</button>
+                                <button data-lang="cpp" class="lang-toggle px-3 py-1 text-sm rounded-md">C++</button>
+                            </div>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <pre class="bg-gray-800 text-white p-4 rounded-lg text-sm overflow-x-auto"><code>DFS(graph, startNode):
+  visited = new Set()
+  DFSHelper(graph, startNode, visited)
+
+DFSHelper(graph, vertex, visited):
+  visited.add(vertex)
+  process(vertex)
+  
+  for each neighbor of vertex:
+    if neighbor is not visited:
+      DFSHelper(graph, neighbor, visited)</code></pre>
+                                <div class="code-block active" data-lang="py">
+                                    <pre class="bg-gray-800 text-white p-4 rounded-lg text-sm overflow-x-auto h-full"><code>def dfs(graph, start_node):
+    visited = set()
+    traversal_order = []
+
+    def dfs_recursive(vertex):
+        visited.add(vertex)
+        traversal_order.append(vertex)
+        for neighbor in graph.get(vertex, []):
+            if neighbor not in visited:
+                dfs_recursive(neighbor)
+    
+    dfs_recursive(start_node)
+    return traversal_order
+
+# Example Usage (Adjacency List Representation)
+example_graph_dfs_py = {
+    'A': ['B', 'C'],
+    'B': ['D', 'E'],
+    'C': ['F'],
+    'D': [],
+    'E': ['F'],
+    'F': []
+}
+# visited_dfs = set()
+# print("DFS Recursive Traversal starting from A:", end=" ")
+# dfs_recursive(example_graph_dfs_py, 'A', visited_dfs) 
+# Output: DFS Recursive Traversal starting from A: A B D E F C
+# print()
+# print("DFS Iterative Traversal starting from A:", dfs_iterative(example_graph_dfs_py, 'A'))
+# Output (iterative): DFS Iterative Traversal starting from A: A C F B E D (order can vary based on neighbor iteration)
+</code></pre>
+                                </div>
+                                <div class="code-block" data-lang="cpp">
+                                    <pre class="bg-gray-800 text-white p-4 rounded-lg text-sm overflow-x-auto h-full"><code>#include &lt;iostream&gt;
+#include &lt;vector&gt;
+#include &lt;stack&gt;
+#include &lt;unordered_map&gt;
+#include &lt;unordered_set&gt;
+#include &lt;algorithm&gt; // For std::reverse
+
+// Recursive DFS implementation
+void dfs_recursive(std::unordered_map&lt;char, std::vector&lt;char&gt;&gt;& graph, char u, std::unordered_set&lt;char&gt;& visited) {
+    visited.insert(u);
+    std::cout &lt;&lt; u &lt;&lt; " ";
+
+    if (graph.count(u)) { // Check if node exists in graph (has neighbors)
+        for (char v : graph.at(u)) {
+            if (visited.find(v) == visited.end()) {
+                dfs_recursive(graph, v, visited);
+            }
+        }
+    }
+}
+
+// Iterative DFS implementation
+std::vector&lt;char&gt; dfs_iterative(std::unordered_map&lt;char, std::vector&lt;char&gt;&gt;& graph, char start_node) {
+    std::unordered_set&lt;char&gt; visited;
+    std::stack&lt;char&gt; s;
+    std::vector&lt;char&gt; traversal_order;
+
+    s.push(start_node);
+
+    while (!s.empty()) {
+        char u = s.top();
+        s.pop();
+
+        if (visited.find(u) == visited.end()) {
+            visited.insert(u);
+            traversal_order.push_back(u);
+
+            if (graph.count(u)) { // Check if node exists in graph (has neighbors)
+                std::vector&lt;char&gt; neighbors = graph.at(u);
+                // Push neighbors in reverse order to maintain a consistent traversal if desired
+                std::reverse(neighbors.begin(), neighbors.end()); 
+                for (char v : neighbors) {
+                    if (visited.find(v) == visited.end()) {
+                        s.push(v);
+                    }
+                }
+            }
+        }
+    }
+    return traversal_order;
+}
+
+/* Example Usage:
+int main() {
+    std::unordered_map&lt;char, std::vector&lt;char&gt;&gt; example_graph_dfs_cpp = {
+        {'A', {'B', 'C'}},
+        {'B', {'D', 'E'}},
+        {'C', {'F'}},
+        {'D', {}},
+        {'E', {'F'}},
+        {'F', {}}
+    };
+
+    std::unordered_set&lt;char&gt; visited_dfs_cpp;
+    std::cout &lt;&lt; "DFS Recursive Traversal: ";
+    dfs_recursive(example_graph_dfs_cpp, 'A', visited_dfs_cpp); // Output: DFS Recursive Traversal: A B D E F C
+    std::cout &lt;&lt; std::endl;
+    std::cout &lt;&lt; "DFS Iterative Traversal: ";
+    std::vector&lt;char&gt; iterative_result = dfs_iterative(example_graph_dfs_cpp, 'A');
+    for (char node : iterative_result) {
+        std::cout &lt;&lt; node &lt;&lt; " ";
+    }
+    std::cout &lt;&lt; std::endl; // Output: DFS Iterative Traversal: A C F B E D (order depends on neighbor iteration order)
+    return 0;
+}
+*/</code></pre>
+                                </div>
+                            </div>
+                        </div>
+                    `
+                }
+            },
+            'shortest-path': {
+                title: 'Shortest Path Algorithms',
+                default: 'dijkstra',
+                tabs: {
+                    'dijkstra': "Dijkstra's",
+                    'bellman-ford': "Bellman-Ford",
+                    'floyd-warshall': "Floyd-Warshall",
+                    'comparison': "Comparison"
+                },
+                content: {
+                    'dijkstra': `
+                        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                            <div class="lg:col-span-1 space-y-4">
+                               <div class="bg-bg-card p-4 rounded-lg shadow">
+                                <h4 class="font-bold text-lg mb-2">Key Properties</h4>
+                                <ul class="list-none space-y-2 text-sm text-text-secondary">
+                                  <li><strong>When to Use:</strong> Finding single-source shortest paths in a <strong>weighted graph with no negative edge weights</strong>.</li>
+                                  <li><strong>Time Complexity:</strong> $$\\mathcal{O}((V+E)\\log V)$$ with a binary heap.</li>
+                                  <li><strong>Space Complexity:</strong> $$\\mathcal{O}(V+E)$$</li>
+                                </ul>
+                               </div>
+                               <div class="bg-bg-card p-4 rounded-lg shadow">
+                                <h4 class="font-bold text-lg mb-2">Intuition</h4>
+                                <p class="text-sm text-text-secondary">Dijkstra's is a greedy algorithm. It maintains a set of visited nodes and, at each step, picks the unvisited node with the smallest known distance from the source. It uses a <strong>Priority Queue (Min-Heap)</strong> to efficiently find this node. It then updates the distances of its neighbors if a shorter path is found.</p>
+                               </div>
+                            </div>
+                             <div class="lg:col-span-2 bg-bg-card p-4 rounded-lg shadow">
+                               <h4 class="font-bold text-lg mb-2">Interactive Visualization</h4>
+                               <div class="bg-gray-100 p-2 rounded-lg text-center">
+                                 <canvas id="dijkstra-viz" width="500" height="300"></canvas>
+                                 <div class="mt-2 space-x-2">
+                                     <button id="dijkstra-next" class="px-4 py-2 text-sm font-semibold rounded-lg" style="background-color: var(--accent-primary); color: white;">Next Step</button>
+                                     <button id="dijkstra-reset" class="px-4 py-2 text-sm font-semibold rounded-lg" style="background-color: var(--accent-secondary); color: white;">Reset</button>
+                                 </div>
+                                 <p id="dijkstra-status" class="text-sm mt-2 h-6 text-text-secondary"></p>
+                               </div>
+                            </div>
+                        </div>
+                        <div class="mt-6 bg-bg-card p-4 rounded-lg shadow">
+                            <h4 class="font-bold text-lg mb-2">Code Example</h4>
+                            <div class="flex items-center gap-2 mb-2">
+                                <button data-lang="py" class="lang-toggle active px-3 py-1 text-sm rounded-md">Python</button>
+                            </div>
+                             <div class="code-block active" data-lang="py">
+                                    <pre class="bg-gray-800 text-white p-4 rounded-lg text-sm overflow-x-auto h-full"><code>import heapq
+
+def dijkstra(graph, start_node):
+    distances = {node: float('inf') for node in graph}
+    distances[start_node] = 0
+    priority_queue = [(0, start_node)] # (distance, node)
+
+    while priority_queue:
+        current_distance, current_node = heapq.heappop(priority_queue)
+
+        # If we've already found a shorter path to current_node, skip
+        if current_distance > distances[current_node]:
+            continue
+
+        for neighbor, weight in graph[current_node].items():
+            distance = current_distance + weight
+            if distance < distances[neighbor]:
+                distances[neighbor] = distance
+                heapq.heappush(priority_queue, (distance, neighbor))
+    return distances
+
+# Example Usage (Adjacency List with weights)
+example_graph_dijkstra_py = {
+    'A': {'B': 1, 'C': 4},
+    'B': {'C': 2, 'D': 5},
+    'C': {'D': 1},
+    'D': {}
+}
+# print("Dijkstra's shortest paths from A:", dijkstra(example_graph_dijkstra_py, 'A'))
+# Output: {'A': 0, 'B': 1, 'C': 3, 'D': 4}
+</code></pre>
+                                </div>
+                        </div>
+                    `,
+                    'bellman-ford': `
+                        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                           <div class="space-y-4">
+                               <div class="bg-bg-card p-4 rounded-lg shadow">
+                                <h4 class="font-bold text-lg mb-2">Key Properties</h4>
+                                <ul class="list-none space-y-2 text-sm text-text-secondary">
+                                  <li><strong>When to Use:</strong> Single-source shortest paths in graphs that <strong>may contain negative edge weights</strong>. Also used to detect <strong>negative cycles</strong>.</li>
+                                  <li><strong>Time Complexity:</strong> $$\\mathcal{O}(VE)$$</li>
+                                  <li><strong>Space Complexity:</strong> $$\\mathcal{O}(V)$$</li>
+                                </ul>
+                               </div>
+                               <div class="bg-bg-card p-4 rounded-lg shadow">
+                                <h4 class="font-bold text-lg mb-2">Intuition</h4>
+                                <p class="text-sm text-text-secondary">Bellman-Ford is based on the principle of relaxation. It repeatedly iterates through all edges in the graph. In each iteration, it tries to shorten the path to each vertex. After $V-1$ iterations, if paths can still be shortened, a negative cycle is detected. This makes it slower but more versatile than Dijkstra's.</p>
+                               </div>
+                           </div>
+                           <div class="bg-bg-card p-4 rounded-lg shadow">
+                                <h4 class="font-bold text-lg mb-2">Code Example</h4>
+                                <div class="flex items-center gap-2 mb-2">
+                                    <button data-lang="py" class="lang-toggle active px-3 py-1 text-sm rounded-md">Python</button>
+                                </div>
+                                <div class="code-block active" data-lang="py">
+                                    <pre class="bg-gray-800 text-white p-4 rounded-lg text-sm overflow-x-auto h-full"><code>class GraphBellmanFord:
+    def __init__(self, vertices):
+        self.V = vertices  # Number of vertices
+        self.graph = []    # Stores edges as (u, v, w)
+
+    def add_edge(self, u, v, w):
+        self.graph.append([u, v, w])
+
+    def bellman_ford(self, src):
+        distances = {i: float('inf') for i in range(self.V)}
+        distances[src] = 0
+
+        # Relaxation phase: Repeat V-1 times
+        for _ in range(self.V - 1):
+            for u, v, w in self.graph:
+                if distances[u]!= float('inf') and distances[u] + w < distances[v]:
+                    distances[v] = distances[u] + w
+
+        # Check for negative-weight cycles
+        for u, v, w in self.graph:
+            if distances[u]!= float('inf') and distances[u] + w < distances[v]:
+                print("Graph contains negative weight cycle")
+                return None # Indicate negative cycle found
+
+        return distances
+
+# Example Usage
+# g_bellman = GraphBellmanFord(5)
+# g_bellman.add_edge(0, 1, -1)
+# g_bellman.add_edge(0, 2, 4)
+# g_bellman.add_edge(1, 2, 3)
+# g_bellman.add_edge(1, 3, 2)
+# g_bellman.add_edge(1, 4, 2)
+# g_bellman.add_edge(3, 2, 5)
+# g_bellman.add_edge(3, 1, 1)
+# g_bellman.add_edge(4, 3, -3)
+#
+# result = g_bellman.bellman_ford(0)
+# if result:
+#     print("Bellman-Ford shortest paths from 0:", result)
+# Output: Bellman-Ford shortest paths from 0: {0: 0, 1: -1, 2: 2, 3: -2, 4: 1}
+#
+# g_neg_cycle = GraphBellmanFord(3)
+# g_neg_cycle.add_edge(0, 1, 1)
+# g_neg_cycle.add_edge(1, 2, -1)
+# g_neg_cycle.add_edge(2, 0, -1) # Cycle 0->1->2->0 with sum 1-1-1 = -1
+# result_cycle = g_neg_cycle.bellman_ford(0)
+# Output: Graph contains negative weight cycle
+</code></pre>
+                                </div>
+                           </div>
+                        </div>
+                    `,
+                    'floyd-warshall': `
+                        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                           <div class="space-y-4">
+                               <div class="bg-bg-card p-4 rounded-lg shadow">
+                                <h4 class="font-bold text-lg mb-2">Key Properties</h4>
+                                <ul class="list-none space-y-2 text-sm text-text-secondary">
+                                  <li><strong>When to Use:</strong> Finding <strong>all-pairs</strong> shortest paths. Works with negative weights but not negative cycles.</li>
+                                  <li><strong>Time Complexity:</strong> $$\\mathcal{O}(V^3)$$</li>
+                                  <li><strong>Space Complexity:</strong> $$\\mathcal{O}(V^2)$$</li>
+                                </ul>
+                               </div>
+                               <div class="bg-bg-card p-4 rounded-lg shadow">
+                                <h4 class="font-bold text-lg mb-2">Intuition</h4>
+                                <p class="text-sm text-text-secondary">Floyd-Warshall is a dynamic programming algorithm. It iteratively considers each vertex as an intermediate point in the path between every other pair of vertices. For every pair (i, j), it checks if going through a vertex k (i → k → j) provides a shorter path, updating the distance if so.</p>
+                               </div>
+                           </div>
+                           <div class="bg-bg-card p-4 rounded-lg shadow">
+                                <h4 class="font-bold text-lg mb-2">Code Example</h4>
+                                <div class="flex items-center gap-2 mb-2">
+                                    <button data-lang="py" class="lang-toggle active px-3 py-1 text-sm rounded-md">Python</button>
+                                </div>
+                                <div class="code-block active" data-lang="py">
+                                    <pre class="bg-gray-800 text-white p-4 rounded-lg text-sm overflow-x-auto h-full"><code>INF = float("Inf")
+
+def floyd_warshall(graph):
+    num_vertices = len(graph)
+    # Initialize the distance matrix with graph weights, and infinity for no direct edge
+    # Assume graph is given as an adjacency matrix with float('inf') for no edge
+    distances = list(map(lambda i: list(map(lambda j: j, i)), graph))
+
+    # Iterate through all possible intermediate vertices (k)
+    for k in range(num_vertices):
+        # Iterate through all possible source vertices (i)
+        for i in range(num_vertices):
+            # Iterate through all possible destination vertices (j)
+            for j in range(num_vertices):
+                # If vertex k is on the shortest path from i to j, then update the distance
+                if distances[i][k]!= INF and distances[k][j]!= INF:
+                    distances[i][j] = min(distances[i][j], distances[i][k] + distances[k][j])
+        
+        # Optional: Check for negative cycles (if dist[i][i] < 0)
+        for i in range(num_vertices):
+            if distances[i][i] < 0:
+                print("Graph contains a negative cycle")
+                return None # Or handle as appropriate
+
+        return distances
+
+# Example Usage
+# INF = float('inf')
+# graph_fw_py = [
+#     [0, 3, INF, 7],
+#     [8, 0, 2, INF],
+#     [5, INF, 0, 1],
+#     [2, INF, INF, 0]
+# ]
+# shortest_paths = floyd_warshall(graph_fw_py)
+# if shortest_paths:
+#     print("Floyd-Warshall all-pairs shortest paths:")
+#     for row in shortest_paths:
+#         print(row)
+# Output:
+# [0, 3, 5, 6]
+# [8, 0, 2, 3]
+# [5, 8, 0, 1]
+# [2, 5, 7, 0]
+</code></pre>
+                                </div>
+                           </div>
+                        </div>
+                    `,
+                    'comparison': `
+                        <h3 class="text-2xl font-bold mb-4">Shortest Path Algorithm Comparison</h3>
+                        <p class="text-text-secondary mb-6">Choosing the right shortest path algorithm depends on the graph's properties (weighted, negative edges) and the problem's scope (single-source vs. all-pairs). This chart visualizes the typical time complexities for different algorithms.</p>
+                        <div class="bg-bg-card p-4 rounded-lg shadow">
+                            <div class="chart-container" style="height: 40vh; max-height: 500px;">
+                                <canvas id="complexity-chart"></canvas>
+                            </div>
+                        </div>
+                    `
+                }
+            },
+            'mst': {
+                title: 'Minimum Spanning Tree (MST) Algorithms',
+                default: 'kruskal',
+                tabs: {
+                    'kruskal': "Kruskal's",
+                    'prim': "Prim's"
+                },
+                content: {
+                    'kruskal': `
+                        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                           <div class="space-y-4">
+                               <div class="bg-bg-card p-4 rounded-lg shadow">
+                                <h4 class="font-bold text-lg mb-2">Key Properties</h4>
+                                <ul class="list-none space-y-2 text-sm text-text-secondary">
+                                  <li><strong>When to Use:</strong> Finding MST in connected, undirected, weighted graphs. Especially efficient for <strong>sparse graphs</strong>.</li>
+                                  <li><strong>Time Complexity:</strong> $$\\mathcal{O}(E \\log E)$$ (dominated by edge sorting).</li>
+                                  <li><strong>Space Complexity:</strong> $$\\mathcal{O}(V + E)$$</li>
+                                </ul>
+                               </div>
+                               <div class="bg-bg-card p-4 rounded-lg shadow">
+                                <h4 class="font-bold text-lg mb-2">Intuition</h4>
+                                <p class="text-sm text-text-secondary">Kruskal's is a greedy algorithm that builds an MST by adding edges one by one. It sorts all edges by weight and adds the next cheapest edge, as long as it doesn't form a cycle. It uses a <strong>Disjoint Set Union (DSU)</strong> data structure to efficiently detect cycles.</p>
+                               </div>
+                           </div>
+                           <div class="bg-bg-card p-4 rounded-lg shadow">
+                                <h4 class="font-bold text-lg mb-2">Code Example (with DSU)</h4>
+                                <div class="flex items-center gap-2 mb-2">
+                                    <button data-lang="py" class="lang-toggle active px-3 py-1 text-sm rounded-md">Python</button>
+                                </div>
+                                <div class="code-block active" data-lang="py">
+                                    <pre class="bg-gray-800 text-white p-4 rounded-lg text-sm overflow-x-auto h-full"><code>class DSU:
+    def __init__(self, n):
+        self.parent = list(range(n))
+        self.rank = [1] * n # Initialize ranks (or sizes) to 1
+
+    def find(self, i):
+        if self.parent[i] == i:
+            return i
+        self.parent[i] = self.find(self.parent[i]) # Path compression
+        return self.parent[i]
+
+    def union(self, i, j):
+        root_i = self.find(i)
+        root_j = self.find(j)
+
+        if root_i != root_j:
+            # Union by rank (or size)
+            if self.rank[root_i] < self.rank[root_j]:
+                self.parent[root_i] = root_j
+            elif self.rank[root_i] > self.rank[root_j]:
+                self.parent[root_j] = root_i
+            else:
+                self.parent[root_j] = root_i
+                self.rank[root_i] += 1
+            return True
+        return False
+
+class GraphKruskal:
+    def __init__(self, vertices):
+        self.V = vertices
+        self.edges = [] # Initialize edges list
+
+    def add_edge(self, u, v, w):
+        self.edges.append((u, v, w))
+
+    def kruskal_mst(self):
+        mst_edges = []
+        self.edges.sort(key=lambda x: x[2]) # Sort edges by weight
+        
+        dsu = DSU(self.V)
+        
+        num_edges_in_mst = 0
+        for u, v, weight in self.edges:
+            if dsu.union(u, v): # If u and v are in different sets, union them
+                mst_edges.append((u, v, weight))
+                num_edges_in_mst += 1
+                if num_edges_in_mst == self.V - 1:
+                    break # MST is complete
+
+        if num_edges_in_mst == self.V - 1:
+            return mst_edges
+        else:
+            return "Graph is disconnected or not enough edges for MST"
+
+# Example Usage
+# g_kruskal = GraphKruskal(4)
+# g_kruskal.add_edge(0, 1, 10)
+# g_kruskal.add_edge(0, 2, 6)
+# g_kruskal.add_edge(0, 3, 5)
+# g_kruskal.add_edge(1, 3, 15)
+# g_kruskal.add_edge(2, 3, 4)
+#
+# mst_kruskal = g_kruskal.kruskal_mst()
+# print("Kruskal's MST edges:", mst_kruskal)
+# Output: Kruskal's MST edges: [(2, 3, 4), (0, 3, 5), (0, 1, 10)]
+# Total weight: 4 + 5 + 10 = 19
+</code></pre>
+                                </div>
+                           </div>
+                        </div>
+                    `,
+                    'prim': `
+                        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                           <div class="space-y-4">
+                               <div class="bg-bg-card p-4 rounded-lg shadow">
+                                <h4 class="font-bold text-lg mb-2">Key Properties</h4>
+                                <ul class="list-none space-y-2 text-sm text-text-secondary">
+                                  <li><strong>When to Use:</strong> Finding MST in connected, undirected, weighted graphs. Especially efficient for <strong>dense graphs</strong>.</li>
+                                  <li><strong>Time Complexity:</strong> $$\\mathcal{O}(E \\log V)$$ with a binary heap.</li>
+                                  <li><strong>Space Complexity:</strong> $$\\mathcal{O}(V + E)$$</li>
+                                </ul>
+                               </div>
+                               <div class="bg-bg-card p-4 rounded-lg shadow">
+                                <h4 class="font-bold text-lg mb-2">Intuition</h4>
+                                <p class="text-sm text-text-secondary">Prim's is a greedy algorithm that grows an MST from a single starting vertex. At each step, it adds the cheapest edge that connects a vertex in the MST to a vertex outside of it. It uses a <strong>Priority Queue</strong> to efficiently find this minimum-weight edge.</p>
+                               </div>
+                           </div>
+                           <div class="bg-bg-card p-4 rounded-lg shadow">
+                                <h4 class="font-bold text-lg mb-2">Code Example</h4>
+                                <div class="flex items-center gap-2 mb-2">
+                                    <button data-lang="py" class="lang-toggle active px-3 py-1 text-sm rounded-md">Python</button>
+                                </div>
+                                <div class="code-block active" data-lang="py">
+                                    <pre class="bg-gray-800 text-white p-4 rounded-lg text-sm overflow-x-auto h-full"><code>import heapq
+
+def prim(graph, start_vertex):
+    min_spanning_tree_edges = []
+    visited = set()
+    priority_queue = [] # (weight, u, v)
+
+    # Start with the initial vertex
+    visited.add(start_vertex)
+    # Add all edges connected to the start_vertex to the priority queue
+    for neighbor, weight in graph[start_vertex].items():
+        heapq.heappush(priority_queue, (weight, start_vertex, neighbor))
+
+    num_vertices = len(graph)
+    while priority_queue and len(min_spanning_tree_edges) < num_vertices - 1:
+        weight, u, v = heapq.heappop(priority_queue)
+
+        if v in visited:
+            continue # Skip if the vertex is already in MST (would form a cycle)
+
+        min_spanning_tree_edges.append((u, v, weight))
+        visited.add(v)
+
+        # Add new edges from the newly added vertex 'v' to the priority queue
+        for neighbor_of_v, weight_of_edge in graph[v].items():
+            if neighbor_of_v not in visited:
+                heapq.heappush(priority_queue, (weight_of_edge, v, neighbor_of_v))
+        
+    # Check if all vertices are connected (for disconnected graphs, MST won't include all)
+    if len(min_spanning_tree_edges) == num_vertices - 1:
+        return min_spanning_tree_edges
+    else:
+        return "Graph is disconnected, MST not possible for all vertices"
+
+
+# Example Usage (Adjacency List with weights)
+example_graph_prim_py = {
+    'A': {'B': 2, 'C': 3},
+    'B': {'A': 2, 'C': 1, 'D': 4},
+    'C': {'A': 3, 'B': 1, 'E': 5},
+    'D': {'B': 4, 'E': 7},
+    'E': {'C': 5, 'D': 7}
+}
+# mst_prim = prim(example_graph_prim_py, 'A')
+# print("Prim's MST edges:", mst_prim)
+# Output: Prim's MST edges: [('B', 'C', 1), ('A', 'B', 2), ('B', 'D', 4), ('C', 'E', 5)]
+# Total weight: 1 + 2 + 4 + 5 = 12
+</code></pre>
+                                </div>
+                           </div>
+                        </div>
+                    `
+                }
+            },
+            'specialized': {
+                title: 'Specialized Topics',
+                default: 'topological-sort',
+                tabs: {
+                    'topological-sort': 'Topological Sort',
+                    'cycle-detection': 'Cycle Detection',
+                    'dsu': 'Disjoint Set Union (DSU)'
+                },
+                content: {
+                    'topological-sort': `
+                        <h3 class="text-2xl font-bold mb-4">Topological Sorting</h3>
+                        <div class="prose max-w-none text-text-secondary mb-6">
+                            <p>Topological sorting provides a linear ordering of vertices in a <strong>Directed Acyclic Graph (DAG)</strong>. For every directed edge from vertex \`u\` to vertex \`v\`, \`u\` comes before \`v\` in the ordering. It's impossible for graphs with cycles.</p>
+                            <p><strong>Common Applications:</strong> Task scheduling (e.g., course prerequisites), build system dependencies, and resolving symbol dependencies in compilers.</p>
+                        </div>
+                        <h4 class="font-semibold text-xl mb-2">Kahn's Algorithm (BFS-based)</h4>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div class="bg-bg-card p-4 rounded-lg shadow">
+                                <h5 class="font-bold text-lg mb-2">Intuition</h5>
+                                <p class="text-sm text-text-secondary">Kahn's algorithm starts by finding all nodes with an in-degree of 0 (no prerequisites). These are added to a queue. The algorithm then processes nodes from the queue, "removing" their outgoing edges (by decrementing the in-degree of their neighbors). If a neighbor's in-degree becomes 0, it's added to the queue. The process continues until the queue is empty. If the number of visited nodes matches the total, a valid sort is found.</p>
+                            </div>
+                            <div class="bg-bg-card p-4 rounded-lg shadow">
+                                <h5 class="font-bold text-lg mb-2">Code Example (Python)</h5>
+                                <pre class="bg-gray-800 text-white p-4 rounded-lg text-sm overflow-x-auto h-full"><code>from collections import deque, defaultdict
+
+def kahn_topological_sort(V, edges):
+    adj_list = defaultdict(list)
+    indegrees = [0] * V
+
+    # Build adjacency list and compute indegrees
+    for u, v in edges:
+        adj_list[u].append(v)
+        indegrees[v] += 1
+
+    queue = deque()
+    for i in range(V):
+        if indegrees[i] == 0:
+            queue.append(i)
+
+    topological_order = []
+    visited_nodes_count = 0
+
+    while queue:
+        u = queue.popleft()
+        topological_order.append(u)
+        visited_nodes_count += 1
+
+        for v in adj_list[u]:
+            indegrees[v] -= 1
+            if indegrees[v] == 0:
+                queue.append(v)
+
+    if visited_nodes_count!= V:
+        return "Graph contains a cycle, topological sort not possible"
+    else:
+        return topological_order
+
+# Example Usage
+# V_kahn = 6
+# edges_kahn = [[5, 2], [5, 0], [4, 0], [4, 1], [2, 3], [3, 1]] # Example dependencies
+# print("Kahn's Topological Sort:", kahn_topological_sort(V_kahn, edges_kahn))
+# Output: Kahn's Topological Sort: [4, 5, 0, 2, 3, 1] (one possible order)
+</code></pre>
+                            </div>
+                        </div>
+                    `,
+                    'cycle-detection': `
+                        <h3 class="text-2xl font-bold mb-4">Cycle Detection</h3>
+                        <div class="prose max-w-none text-text-secondary mb-6">
+                            <p>Detecting cycles is a crucial task for validating graph structures (like ensuring a graph is a DAG) and preventing infinite loops. The technique differs for directed and undirected graphs.</p>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div class="bg-bg-card p-4 rounded-lg shadow">
+                                <h4 class="font-bold text-lg mb-2">In Undirected Graphs</h4>
+                                <p class="text-sm text-text-secondary">During a traversal (BFS or DFS), if we encounter a visited vertex that is <strong>not</strong> the immediate parent of the current vertex, we have found a cycle. We must track the parent to avoid mistaking the backward edge of a traversal for a true cycle.</p>
+                            </div>
+                            <div class="bg-bg-card p-4 rounded-lg shadow">
+                                <h4 class="font-bold text-lg mb-2">In Directed Graphs</h4>
+                                <p class="text-sm text-text-secondary">Using DFS, we can detect a cycle by maintaining the recursion stack. A cycle exists if we find a "back edge"—an edge pointing from a node to one of its ancestors in the current DFS path. This is often implemented using three states (colors): unvisited (white), visiting (gray - in recursion stack), and visited (black - fully explored). An edge to a gray node indicates a cycle.</p>
+                            </div>
+                        </div>
+                    `,
+                    'dsu': `
+                         <h3 class="text-2xl font-bold mb-4">Disjoint Set Union (DSU)</h3>
+                        <div class="prose max-w-none text-text-secondary mb-6">
+                            <p>Also known as Union-Find, DSU is a data structure that tracks a set of elements partitioned into a number of disjoint (non-overlapping) subsets. It is highly efficient and a key component in algorithms like Kruskal's.</p>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                           <div class="bg-bg-card p-4 rounded-lg shadow space-y-4">
+                               <h4 class="font-bold text-lg mb-2">Core Operations</h4>
+                               <ul class="list-disc pl-5 space-y-2 text-sm">
+                                  <li><strong>\`find(i)\`:</strong> Determines the representative (root) of the set containing element \`i\`.</li>
+                                  <li><strong>\`union(i, j)\`:</strong> Merges the two sets containing elements \`i\` and \`j\`.</li>
+                               </ul>
+                               <h4 class="font-bold text-lg mb-2">Key Optimizations</h4>
+                               <ul class="list-disc pl-5 space-y-2 text-sm">
+                                  <li><strong>Path Compression:</strong> During a \`find\` operation, it flattens the structure of the tree by making every node on the find path point directly to the root.</li>
+                                  <li><strong>Union by Rank/Size:</strong> When merging, it attaches the root of the smaller tree (based on its "rank" or "size") to the root of the larger tree.</li>
+                               </ul>
+                               <p class="text-sm text-text-secondary">With these optimizations, DSU operations have a nearly constant amortized time complexity, making it extremely fast.</p>
+                           </div>
+                           <div class="bg-bg-card p-4 rounded-lg shadow">
+                                <h4 class="font-bold text-lg mb-2">Python Implementation</h4>
+                                <pre class="bg-gray-800 text-white p-4 rounded-lg text-sm overflow-x-auto h-full"><code>class DSU:
+    def __init__(self, n):
+        self.parent = list(range(n))
+        self.rank = [1] * n # Initialize ranks (or sizes) to 1
+
+    def find(self, i):
+        if self.parent[i] == i:
+            return i
+        self.parent[i] = self.find(self.parent[i]) # Path compression
+        return self.parent[i]
+
+    def union(self, i, j):
+        root_i = self.find(i)
+        root_j = self.find(j)
+        if root_i != root_j:
+            # Union by rank
+            if self.rank[root_i] > self.rank[root_j]:
+                self.parent[root_j] = root_i
+            elif self.rank[root_i] < self.rank[root_j]:
+                self.parent[root_i] = root_j
+            else:
+                self.parent[root_j] = root_i
+                self.rank[root_i] += 1
+            return True
+        return False</code></pre>
+                           </div>
+                        </div>
+                    `
+                }
+            },
+            'problem-solving': {
+                title: 'Problem-Solving Strategies',
+                default: 'strategy',
+                tabs: {
+                    'strategy': 'Approach & Intuition'
+                },
+                content: {
+                    'strategy': `
+                        <h3 class="text-2xl font-bold mb-4">A Strategic Approach to Graph Problems</h3>
+                        <div class="prose max-w-none text-text-secondary space-y-6">
+                            <div>
+                                <h4 class="font-semibold text-xl mb-2">1. Model the Problem as a Graph</h4>
+                                <p>The first step is to determine if a graph is the right data structure. Look for entities (which become vertices) and relationships/connections between them (which become edges). For example:</p>
+                                <ul class="list-disc pl-5 space-y-1">
+                                    <li>Cities and roads -> Vertices and edges.</li>
+                                    <li>People and friendships -> Vertices and edges.</li>
+                                    <li>Tasks and prerequisites -> Vertices and directed edges.</li>
+                                    <li>States in a puzzle and possible moves -> Vertices and edges.</li>
+                                </ul>
+                                <p>Assign weights to edges if there are costs, distances, or priorities involved. Determine if relationships are one-way (directed) or two-way (undirected).</p>
+                            </div>
+                            <div>
+                                <h4 class="font-semibold text-xl mb-2">2. Choose the Right Algorithm</h4>
+                                <p>Once you have a graph model, select an algorithm based on what the problem is asking for:</p>
+                                <ul class="list-disc pl-5 space-y-2">
+                                    <li><strong>Is it about finding the shortest path?</strong>
+                                        <ul class="list-circle pl-5">
+                                            <li>Unweighted graph? → <strong>BFS</strong>.</li>
+                                            <li>Weighted graph, no negative edges? → <strong>Dijkstra's</strong>.</li>
+                                            <li>Weighted graph, with negative edges? → <strong>Bellman-Ford</strong>.</li>
+                                            <li>All-pairs shortest paths? → <strong>Floyd-Warshall</strong>.</li>
+                                        </ul>
+                                    </li>
+                                    <li><strong>Is it about visiting/processing every node?</strong>
+                                        <ul class="list-circle pl-5">
+                                            <li>Exploring layer-by-layer is needed? → <strong>BFS</strong>.</li>
+                                            <li>Exploring a path to its conclusion is needed? → <strong>DFS</strong>.</li>
+                                        </ul>
+                                    </li>
+                                    <li><strong>Is it about connecting everything with minimum cost?</strong>
+                                        <ul class="list-circle pl-5">
+                                            <li>Think <strong>Minimum Spanning Tree (MST)</strong>. Use <strong>Kruskal's</strong> (for sparse graphs) or <strong>Prim's</strong> (for dense graphs).</li>
+                                        </ul>
+                                    </li>
+                                    <li><strong>Are there dependencies or a required order of operations?</strong>
+                                        <ul class="list-circle pl-5">
+                                            <li>This indicates a Directed Acyclic Graph (DAG) problem. Use <strong>Topological Sort</strong>.</li>
+                                        </ul>
+                                    </li>
+                                    <li><strong>Is it about finding cycles?</strong>
+                                        <ul class="list-circle pl-5">
+                                            <li>Use the specialized <strong>Cycle Detection</strong> algorithms based on DFS.</li>
+                                        </ul>
+                                    </li>
+                                </ul>
+                            </div>
+                            <div>
+                                <h4 class="font-semibold text-xl mb-2">3. Handle Edge Cases</h4>
+                                <p>Always consider potential complexities in your implementation:</p>
+                                <ul class="list-disc pl-5 space-y-1">
+                                    <li><strong>Disconnected Graphs:</strong> Your traversal loop should iterate through all vertices to ensure all components are visited.</li>
+                                    <li><strong>Cycles:</strong> Be aware of how your chosen algorithm behaves with cycles. They can cause infinite loops in simple traversals if not handled.</li>
+                                    <li><strong>Negative Cycles:</strong> For shortest path problems, these can make the path infinitely small. Bellman-Ford can detect them.</li>
+                                    <li><strong>Self-loops and Multiple Edges:</strong> Decide if these are relevant to your problem and how your graph representation will handle them.</li>
+                                </ul>
+                                <button id="problem-generator-btn" class="mt-4 px-4 py-2 text-sm font-semibold rounded-lg text-white" style="background-color: var(--accent-primary);">Generate a Problem Idea ✨</button>
+                                <div id="problem-output" class="mt-2 p-3 bg-gray-50 rounded-lg border border-border-color text-sm text-text-secondary hidden"></div>
+                            </div>
+                        </div>
+                    `
+                }
+            }
+        };
+
+        const mainContent = document.getElementById('main-content');
+        let activeCategory = 'concepts';
+        let activeTab = 'representations';
+        let complexityChart = null;
+
+        // --- Visualization Data and State ---
+        const vizGraph = {
+            nodes: [
+                { id: 'A', x: 50, y: 150 }, { id: 'B', x: 150, y: 50 }, { id: 'C', x: 150, y: 250 },
+                { id: 'D', x: 250, y: 50 }, { id: 'E', x: 250, y: 250 }, { id: 'F', x: 350, y: 150 },
+                { id: 'G', x: 450, y: 150 }
+            ],
+            edges: [
+                { from: 'A', to: 'B' }, { from: 'A', to: 'C' }, { from: 'B', to: 'D' }, 
+                { from: 'C', to: 'E' }, { from: 'D', to: 'F' }, { from: 'E', to: 'F' }, 
+                { from: 'F', to: 'G' }
+            ],
+             weightedEdges: [
+                { from: 'A', to: 'B', weight: 2 }, { from: 'A', to: 'C', weight: 4 }, { from: 'B', to: 'D', weight: 7 }, 
+                { from: 'C', to: 'E', weight: 3 }, { from: 'D', to: 'F', weight: 1 }, { from: 'E', to: 'F', weight: 5 }, 
+                { from: 'F', to: 'G', weight: 6 }
+            ]
+        };
+        const nodePos = {};
+        vizGraph.nodes.forEach(n => nodePos[n.id] = {x: n.x, y: n.y});
+
+        let bfsState, dfsState, dijkstraState;
+
+        // --- Gemini API Call Utility ---
+        async function callGeminiApi(prompt, outputElementId) {
+            const outputElement = document.getElementById(outputElementId);
+            outputElement.innerHTML = '<div class="flex items-center justify-center py-4"><div class="animate-spin rounded-full h-8 w-8 border-b-2 border-accent-primary"></div><span class="ml-3 text-text-secondary">Generating...</span></div>';
+            outputElement.classList.remove('hidden');
+
+            let chatHistory = [];
+            chatHistory.push({ role: "user", parts: [{ text: prompt }] });
+            const payload = { contents: chatHistory };
+            const apiKey = ""; 
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+
+            try {
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const result = await response.json();
+                if (result.candidates && result.candidates.length > 0 &&
+                    result.candidates[0].content && result.candidates[0].content.parts &&
+                    result.candidates[0].content.parts.length > 0) {
+                    const text = result.candidates[0].content.parts[0].text;
+                    outputElement.innerHTML = text;
+                } else {
+                    outputElement.innerHTML = 'Error: Could not get a response from the LLM.';
+                }
+            } catch (error) {
+                console.error('Error calling Gemini API:', error);
+                outputElement.innerHTML = 'Error: Failed to connect to the LLM. Please try again.';
+            }
+        }
+
+        function renderContent(category, tab) {
+            const categoryData = contentData[category];
+            if (!categoryData) return;
+
+            activeCategory = category;
+            activeTab = tab || categoryData.default;
+
+            let tabsHtml = '<div class="flex border-b border-border-color mb-6 space-x-4">';
+            for (const tabId in categoryData.tabs) {
+                tabsHtml += `<button data-tab="${tabId}" class="content-tab py-2 px-1 font-semibold ${tabId === activeTab ? 'active' : ''}">${categoryData.tabs[tabId]}</button>`;
+            }
+            tabsHtml += '</div>';
+
+            let contentHtml = `<h2 class="text-3xl font-bold mb-2" style="color: var(--accent-primary);">${categoryData.title}</h2>`;
+            if (Object.keys(categoryData.tabs).length > 0) {
+              contentHtml += tabsHtml;
+            }
+
+            for (const tabId in categoryData.content) {
+                contentHtml += `<div id="content-${tabId}" class="content-section ${tabId === activeTab ? 'active' : ''}">${categoryData.content[tabId]}</div>`;
+            }
+
+            mainContent.innerHTML = contentHtml;
+            
+            // Re-bind events for the new content
+            mainContent.querySelectorAll('.content-tab').forEach(button => {
+                button.addEventListener('click', () => {
+                    renderContent(category, button.dataset.tab);
+                });
+            });
+            mainContent.querySelectorAll('.lang-toggle').forEach(button => {
+                button.addEventListener('click', (e) => {
+                   const lang = e.target.dataset.lang;
+                   const container = e.target.closest('.bg-bg-card');
+                   container.querySelectorAll('.lang-toggle').forEach(btn => btn.classList.remove('active'));
+                   e.target.classList.add('active');
+                   container.querySelectorAll('.code-block').forEach(block => {
+                       block.classList.remove('active');
+                       if(block.dataset.lang === lang) {
+                           block.classList.add('active');
+                       }
+                   });
+                });
+            });
+
+            // --- LLM Feature Bindings ---
+            if (activeCategory === 'traversal') {
+                if (activeTab === 'bfs') {
+                    const bfsExplainBtn = document.getElementById('bfs-explain-btn');
+                    if (bfsExplainBtn) {
+                        bfsExplainBtn.onclick = () => {
+                            callGeminiApi("Explain Breadth-First Search (BFS) in simple terms, for a beginner. Use a common real-world analogy to make it easy to understand.", 'bfs-explanation');
+                        };
+                    }
+                } else if (activeTab === 'dfs') {
+                    const dfsExplainBtn = document.getElementById('dfs-explain-btn');
+                    if (dfsExplainBtn) {
+                        dfsExplainBtn.onclick = () => {
+                            callGeminiApi("Explain Depth-First Search (DFS) in simple terms, for a beginner. Use a common real-world analogy to make it easy to understand.", 'dfs-explanation');
+                        };
+                    }
+                }
+            }
+            if (activeCategory === 'problem-solving' && activeTab === 'strategy') {
+                const problemGeneratorBtn = document.getElementById('problem-generator-btn');
+                if (problemGeneratorBtn) {
+                    problemGeneratorBtn.onclick = () => {
+                        callGeminiApi("Generate a concise and creative problem statement that can be solved using a common graph algorithm (e.g., BFS, DFS, Dijkstra, MST, Topological Sort). Do not provide the solution, hints, or the algorithm name directly. Just the problem statement in 2-3 sentences.", 'problem-output');
+                    };
+                }
+            }
+
+
+            // Post-render actions
+            if (category === 'shortest-path' && activeTab === 'comparison') {
+                renderComplexityChart();
+            }
+            if(category === 'traversal' && activeTab === 'bfs'){
+                initBfsViz();
+            }
+            if(category === 'traversal' && activeTab === 'dfs'){
+                initDfsViz();
+            }
+            if(category === 'shortest-path' && activeTab === 'dijkstra'){
+                initDijkstraViz();
+            }
+             if (typeof MathJax !== 'undefined') {
+                MathJax.typesetPromise();
+            }
+        }
+
+        function setupSidebar() {
+            document.querySelectorAll('.sidebar-btn').forEach(button => {
+                button.addEventListener('click', () => {
+                    document.querySelectorAll('.sidebar-btn').forEach(btn => btn.classList.remove('active'));
+                    button.classList.add('active');
+                    renderContent(button.dataset.category);
+                });
+            });
+        }
+        
+        function renderComplexityChart() {
+            const ctx = document.getElementById('complexity-chart').getContext('2d');
+            if (complexityChart) {
+                complexityChart.destroy();
+            }
+            const data = {
+                labels: ["BFS (Unweighted)", "Dijkstra's (Heap)", "Bellman-Ford", "Floyd-Warshall"],
+                datasets: [{
+                    label: 'Worst-Case Time Complexity',
+                    data: [1, 2, 3, 4], // Placeholder for visual height, not actual values
+                    backgroundColor: [
+                        'rgba(82, 121, 111, 0.6)',
+                        'rgba(82, 121, 111, 0.7)',
+                        'rgba(212, 163, 115, 0.7)',
+                        'rgba(212, 163, 115, 0.8)',
+                    ],
+                    borderColor: [
+                        '#52796f',
+                        '#354f52',
+                        '#d4a373',
+                        '#bc6c25',
+                    ],
+                    borderWidth: 2
+                }]
+            };
+            
+            const complexityText = {
+                0: "O(V + E)",
+                1: "O((V+E)logV)",
+                2: "O(V * E)",
+                3: "O(V^3)"
+            };
+
+            complexityChart = new Chart(ctx, {
+                type: 'bar',
+                data: data,
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    indexAxis: 'y',
+                    scales: {
+                       x: { display: false },
+                       y: { grid: { display: false } }
+                    },
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return `Complexity: ${complexityText[context.dataIndex]}`;
+                                }
+                            }
+                        },
+                        title: {
+                            display: true,
+                            text: "Relative Time Complexity Comparison (Hover for details)"
+                        }
+                    }
+                }
+            });
+        }
+
+        // --- Visualization Logic ---
+        function drawGraph(canvasId, edgesToDraw, nodeColors, edgeColors, weighted = false) {
+            const canvas = document.getElementById(canvasId);
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Draw edges
+            edgesToDraw.forEach(edge => {
+                const start = nodePos[edge.from];
+                const end = nodePos[edge.to];
+                const colorKey = `${edge.from}-${edge.to}`;
+                const revColorKey = `${edge.to}-${edge.from}`;
+
+                ctx.beginPath();
+                ctx.moveTo(start.x, start.y);
+                ctx.lineTo(end.x, end.y);
+                ctx.strokeStyle = edgeColors[colorKey] || edgeColors[revColorKey] || '#adb5bd';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+
+                if (weighted) {
+                    ctx.fillStyle = '#343a40';
+                    ctx.font = '12px Inter';
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.save();
+                    ctx.translate((start.x + end.x) / 2, (start.y + end.y) / 2);
+                    ctx.fillStyle = edgeColors[colorKey] || edgeColors[revColorKey] || '#343a40';
+                    ctx.fillText(edge.weight, 0, -8);
+                    ctx.restore();
+                }
+            });
+
+            // Draw nodes
+            vizGraph.nodes.forEach(node => {
+                ctx.beginPath();
+                ctx.arc(node.x, node.y, 15, 0, 2 * Math.PI);
+                ctx.fillStyle = nodeColors[node.id] || '#dee2e6';
+                ctx.fill();
+                ctx.strokeStyle = '#495057';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+                ctx.fillStyle = '#343a40';
+                ctx.font = 'bold 14px Inter';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(node.id, node.x, node.y);
+
+                 if (dijkstraState && dijkstraState.distances[node.id] !== undefined) {
+                    const dist = dijkstraState.distances[node.id];
+                    ctx.font = '12px Inter';
+                    ctx.fillStyle = '#e63946';
+                    ctx.fillText(dist === Infinity ? '∞' : dist, node.x, node.y + 25);
+                }
+            });
+        }
+
+        function initBfsViz() {
+            const startNode = 'A';
+            bfsState = {
+                queue: [startNode],
+                visited: new Set([startNode]),
+                nodeColors: { [startNode]: '#d4a373' },
+                edgeColors: {},
+                statusText: `Start with node ${startNode}. Queue: [${startNode}]`
+            };
+            drawGraph('bfs-viz', vizGraph.edges, bfsState.nodeColors, bfsState.edgeColors);
+            document.getElementById('bfs-status').textContent = bfsState.statusText;
+            
+            document.getElementById('bfs-reset').onclick = initBfsViz;
+            document.getElementById('bfs-next').onclick = runBfsStep;
+        }
+
+        function runBfsStep() {
+            if (bfsState.queue.length === 0) {
+                document.getElementById('bfs-status').textContent = 'Traversal Complete!';
+                return;
+            }
+
+            const u = bfsState.queue.shift();
+            bfsState.nodeColors[u] = '#52796f'; // Processed color
+            
+            const neighbors = vizGraph.edges.filter(e => e.from === u || e.to === u).map(e => e.from === u ? e.to : e.from);
+            let neighborsAdded = 0;
+            
+            for (const v of neighbors) {
+                if (!bfsState.visited.has(v)) {
+                    neighborsAdded++;
+                    bfsState.visited.add(v);
+                    bfsState.queue.push(v);
+                    bfsState.nodeColors[v] = '#d4a373'; // Queued color
+                    bfsState.edgeColors[`${u}-${v}`] = '#52796f';
+                }
+            }
+
+            bfsState.statusText = `Processing ${u}. ${neighborsAdded > 0 ? `Adding neighbors to queue.` : 'No new neighbors.'} Queue: [${bfsState.queue.join(', ')}]`;
+            document.getElementById('bfs-status').textContent = bfsState.statusText;
+            drawGraph('bfs-viz', vizGraph.edges, bfsState.nodeColors, bfsState.edgeColors);
+        }
+
+        function initDfsViz() {
+            const startNode = 'A';
+            dfsState = {
+                stack: [startNode],
+                visited: new Set(),
+                nodeColors: { [startNode]: '#d4a373' }, // Stack color
+                edgeColors: {},
+                statusText: `Start with node ${startNode}. Stack: [${startNode}]`
+            };
+            drawGraph('dfs-viz', vizGraph.edges, dfsState.nodeColors, dfsState.edgeColors);
+            document.getElementById('dfs-status').textContent = dfsState.statusText;
+
+            document.getElementById('dfs-reset').onclick = initDfsViz;
+            document.getElementById('dfs-next').onclick = runDfsStep;
+        }
+
+        function runDfsStep() {
+            if (dfsState.stack.length === 0) {
+                document.getElementById('dfs-status').textContent = 'Traversal Complete!';
+                return;
+            }
+            const u = dfsState.stack.pop();
+            
+            if (dfsState.visited.has(u)) {
+                dfsState.statusText = `Node ${u} already visited. Popping from stack.`;
+                document.getElementById('dfs-status').textContent = dfsState.statusText;
+                drawGraph('dfs-viz', vizGraph.edges, dfsState.nodeColors, dfsState.edgeColors);
+                return;
+            }
+
+            dfsState.visited.add(u);
+            dfsState.nodeColors[u] = '#52796f'; // Visited color
+
+            const neighbors = vizGraph.edges
+                .filter(e => e.from === u || e.to === u)
+                .map(e => e.from === u ? e.to : e.from)
+                .filter(n => !dfsState.visited.has(n));
+            
+            let neighborsAdded = 0;
+            for (const v of neighbors.reverse()) { // Push in reverse to process alphabetically
+                 neighborsAdded++;
+                 dfsState.stack.push(v);
+                 dfsState.nodeColors[v] = '#d4a373'; // Stack color
+                 dfsState.edgeColors[`${u}-${v}`] = '#52796f';
+            }
+            
+            dfsState.statusText = `Visiting ${u}. Pushing unvisited neighbors to stack. Stack: [${dfsState.stack.join(', ')}]`;
+            document.getElementById('dfs-status').textContent = dfsState.statusText;
+            drawGraph('dfs-viz', vizGraph.edges, dfsState.nodeColors, dfsState.edgeColors);
+        }
+
+        function initDijkstraViz() {
+            const startNode = 'A';
+            const nodes = vizGraph.nodes.map(n => n.id);
+            dijkstraState = {
+                distances: Object.fromEntries(nodes.map(n => [n, Infinity])),
+                pq: [{dist: 0, node: startNode}],
+                visited: new Set(),
+                nodeColors: {},
+                edgeColors: {},
+                statusText: `Start at ${startNode}. Distances initialized.`,
+            };
+            dijkstraState.distances[startNode] = 0;
+            dijkstraState.nodeColors[startNode] = '#d4a373'; // In PQ color
+            
+            document.getElementById('dijkstra-status').textContent = dijkstraState.statusText;
+            drawGraph('dijkstra-viz', vizGraph.weightedEdges, dijkstraState.nodeColors, dijkstraState.edgeColors, true);
+            
+            document.getElementById('dijkstra-reset').onclick = initDijkstraViz;
+            document.getElementById('dijkstra-next').onclick = runDijkstraStep;
+        }
+
+        function runDijkstraStep() {
+            if (dijkstraState.pq.length === 0) {
+                dijkstraState.statusText = 'Algorithm finished. Final shortest paths shown.';
+                document.getElementById('dijkstra-status').textContent = dijkstraState.statusText;
+                return;
+            }
+
+            // Simple find min, as we don't have a real heap
+            dijkstraState.pq.sort((a,b) => a.dist - b.dist);
+            const {dist, node: u} = dijkstraState.pq.shift();
+
+            if (dijkstraState.visited.has(u)) {
+                 runDijkstraStep(); // Skip if already finalized
+                 return;
+            }
+
+            dijkstraState.visited.add(u);
+            dijkstraState.nodeColors[u] = '#52796f'; // Finalized color
+            dijkstraState.statusText = `Visiting node ${u} (cost ${dist}). Finalizing its distance.`;
+
+            const neighbors = vizGraph.weightedEdges.filter(e => e.from === u || e.to === u);
+
+            for(const edge of neighbors){
+                const v = edge.from === u ? edge.to : edge.from;
+                if (!dijkstraState.visited.has(v)) {
+                    const newDist = dist + edge.weight;
+                    if (newDist < dijkstraState.distances[v]) {
+                        dijkstraState.distances[v] = newDist;
+                        dijkstraState.pq.push({dist: newDist, node: v});
+                        dijkstraState.nodeColors[v] = '#d4a373'; // In PQ or updated
+                        dijkstraState.edgeColors[`${u}-${v}`] = '#52796f';
+                        dijkstraState.statusText += ` Updated ${v} to ${newDist}.`;
+                    }
+                }
+            }
+            
+            document.getElementById('dijkstra-status').textContent = dijkstraState.statusText;
+            drawGraph('dijkstra-viz', vizGraph.weightedEdges, dijkstraState.nodeColors, dijkstraState.edgeColors, true);
+        }
+
+
+        // Initial Load
+        document.addEventListener('DOMContentLoaded', () => {
+            // Load MathJax dynamically
+            const script = document.createElement('script');
+            script.src = 'https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js';
+            script.async = true;
+            script.id = 'MathJax-script';
+            document.head.appendChild(script);
+            window.MathJax = {
+                tex: {
+                    inlineMath: [['$', '$'], ['\\(', '\\)']],
+                    displayMath: [['$$', '$$'], ['\\[', '\\]']]
+                },
+                svg: {
+                    fontCache: 'global'
+                }
+            };
+
+            script.onload = () => {
+                setupSidebar();
+                renderContent(activeCategory, activeTab);
+            };
+        });
+    </script>
+</body>
+</html>
